@@ -1,0 +1,34 @@
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+{{- $fullName := include "github-runner.fullname" . -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ .Release.Namespace | default "default" }}
+  labels:
+    {{- include "github-runner.labels" (dict "context" . "component" $fullName "name" $fullName) | nindent 4 }}
+  {{- with .Values.persistence.annotations  }}
+  annotations:
+{{ toYaml . | indent 4 }}
+  {{- end }}
+  {{- with .Values.persistence.finalizers  }}
+  finalizers:
+{{ toYaml . | indent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- range .Values.persistence.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName }}
+  {{- end -}}
+  {{- with .Values.persistence.selectorLabels }}
+  selector:
+    matchLabels:
+{{ toYaml . | indent 6 }}
+  {{- end }}
+{{- end -}}

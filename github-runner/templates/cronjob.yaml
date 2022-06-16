@@ -1,0 +1,24 @@
+{{- if .Values.cleaner.enabled }}
+{{- $fullName := include "github-runner.fullname" . -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $fullName }}-cleaner
+spec:
+  schedule: {{ .Values.cleaner.schedule | default "*/3 * * * *" | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cleaner.jobHistoryLimit.successful | default 0 }}
+  failedJobsHistoryLimit: {{ .Values.cleaner.jobHistoryLimit.failed | default 0 }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "github-runner.serviceAccountName" . }}
+          containers:
+            - name: cleaner
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/bash", "-c", "./cleanup.py"]
+              env:
+                {{- include "github-runner.config" . | indent 16 }}
+          restartPolicy: OnFailure
+{{- end }}

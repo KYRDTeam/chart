@@ -1,0 +1,111 @@
+{{- $fullName := include "github-runner.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "github-runner.labels" (dict "context" . "component" $fullName "name" $fullName) | nindent 4 }}
+    app.kubernetes.io/version: {{ default .Values.image.tag | quote }}
+    {{- with .Values.podLabels }}
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicas }}
+  {{- end }}
+  {{- if .Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- end}}
+  selector:
+    matchLabels:
+      {{- include "github-runner.selectorLabels" (dict "context" . "name" $fullName) | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "github-runner.labels" (dict "context" . "component" $fullName "name" $fullName) | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "github-runner.serviceAccountName" . }}
+      initContainers:
+        - name: init
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+          - bash
+          - -c
+          args:
+          - cp -r /runner/* /backup
+          env:
+            {{- include "github-runner.config" . | indent 12 }}
+          volumeMounts:
+            - name: runner
+              mountPath: /backup
+      containers:
+        - name: runner
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.overrideCommand }}
+          command:
+            {{- range .Values.overrideCommand }}
+            - {{ . }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          lifecycle:
+            preStop:
+              exec:
+                command: [
+                    "/bin/bash",
+                    "-c",
+                    "./config.sh remove --token $(./remove_token.sh | jq -r .token)",
+                ]
+          env:
+            {{- include "github-runner.config" . | indent 12 }}
+          volumeMounts:
+          {{- if .Values.persistence.enabled }}
+            - name: storage
+              mountPath: {{ .Values.persistence.mountPath | default "/mnt" | quote }}
+          {{- end }}
+            - name: runner
+              mountPath: /runner
+            - name: tmp
+              mountPath: /tmp
+        {{- if .Values.dind.enabled }}
+        - name: dind
+          image: "{{ .Values.dind.image.repository }}:{{ .Values.dind.image.tag | default "dind" }}"
+          resources:
+            {{- toYaml .Values.dind.resources | nindent 12 }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dind-storage
+              mountPath: /var/lib/docker
+            - name: runner
+              mountPath: /runner
+            - name: tmp
+              mountPath: /tmp
+        {{- end }}
+      volumes:
+      {{- if .Values.dind.enabled }}
+        - name: dind-storage
+          emptyDir: {}
+      {{- end }}
+      {{- if .Values.persistence.enabled }}
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default $fullName }}
+      {{- end }}
+        - name: runner
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      nodeSelector:
+        {{- include "github-runner.nodeSelector" . | indent 8 }}

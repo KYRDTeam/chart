@@ -1,0 +1,98 @@
+# Override the name of the chart
+nameOverride: ""
+# Override app name
+# Please read the helper for more detail
+fullnameOverride: ""
+
+replicas: 1
+revisionHistoryLimit: 1
+
+image:
+  repository: tungpun/gh-runner
+  pullPolicy: IfNotPresent
+  tag: 2.293.0
+
+imagePullSecrets:
+  []
+  # - name: regcred
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podLabels: []
+
+# Node selector. Default is default-pool (GKE)
+nodeSelector: {}
+  # cloud.google.com/gke-nodepool: highcpu32-pool
+
+overrideCommand: []
+
+resources: {}
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: #75
+
+## Enable persistence using Persistent Volume Claims
+## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+persistence:
+  enabled: false
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  annotations: {}
+  finalizers:
+    - kubernetes.io/pvc-protection
+  selectorLabels: {}
+    # bucket: shared
+  existingClaim: ""
+  # Defaut /mnt
+  mountPath: ""
+
+
+## Runner config
+config:
+  # githubToken should be set from outside
+  # required
+  githubToken: ""
+  # Indicates runner scope as org or repo.
+  org: true
+  orgName: KyberNetwork
+  # If `org` is false, their both fields below must be fill.
+  repoOwner: ""
+  repoName: ""
+  labels:
+    - self-hosted
+    - Linux
+    - X64
+
+## Enable docker in docker
+dind:
+  enabled: true
+
+  image:
+    repository: docker
+    tag: 18-dind
+
+  resources: {}
+
+## cleaner is a cronjob that peridically checks for differences
+## between GitHub and Kubernetes
+cleaner:
+  enabled: true
+  schedule: "*/3 * * * *"
+  jobHistoryLimit:
+    failed: 2
+    successful: 0
