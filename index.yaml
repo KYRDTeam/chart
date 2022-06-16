@@ -2,16 +2,25 @@ apiVersion: v1
 entries:
   github-runner:
   - apiVersion: v2
-    created: "2022-06-16T14:27:33.669879+07:00"
+    created: "2022-06-16T14:39:01.294109+07:00"
     description: Support GitHub Runner
-    digest: bd59a3e15c3db126a65d0738a2f4bc862e7a35b58d1f15d7400cabcfedbce05e
+    digest: 6671fe3b129aae41b5747cb71862787f922664b11414e823a9bf1c7513418ad9
+    name: github-runner
+    type: application
+    urls:
+    - https://kyrdteam.github.io/chart/github-runner-0.1.20.tgz
+    version: 0.1.20
+  - apiVersion: v2
+    created: "2022-06-16T14:39:01.293218+07:00"
+    description: Support GitHub Runner
+    digest: 4b61fda4f07cb3c007af1156bb470b08e51bfbf7aedf3d2fabb9a6b82e823846
     name: github-runner
     type: application
     urls:
     - https://kyrdteam.github.io/chart/github-runner-0.1.19.tgz
     version: 0.1.19
   - apiVersion: v2
-    created: "2022-06-16T14:27:33.669185+07:00"
+    created: "2022-06-16T14:39:01.292711+07:00"
     description: Support GitHub Runner
     digest: 5387ebca106becca768fded05f88876778e7e36f7466928cd27640a7945b197a
     name: github-runner
@@ -19,4 +28,4 @@ entries:
     urls:
     - https://kyrdteam.github.io/chart/github-runner-0.1.18.tgz
     version: 0.1.18
-generated: "2022-06-16T14:27:33.666847+07:00"
+generated: "2022-06-16T14:39:01.291094+07:00"
